@@ -1,0 +1,103 @@
+
+(cell, int) load_data() method_id {
+    ;; dict oracles, int price_per_million_blocks
+    var ds = get_data().begin_parse();
+    return (ds~load_dict(),
+        ds.preload_uint(32));
+}
+
+() store_data(cell orcls, int store_price) impure {
+    set_data(begin_cell()
+        .store_dict(orcls)
+        .store_uint(store_price, 32)
+        .end_cell());
+}
+
+cell update_oracle(cell orcls, slice orcl_addr, int paid_until) impure {
+    int orcl_hash = slice_hash(orcl_addr);
+    (slice orcl, int f) = orcls.udict_get?(256, orcl_hash);
+    int valid_until = 0;
+    if (f) {
+        valid_until = orcl.preload_uint(16);
+    }
+    valid_until += paid_until;
+    orcls~udict_set(256, orcl_hash, begin_cell().store_uint(valid_until, 16).store_slice(orcl_addr).end_cell().begin_parse());
+    return orcls;
+}
+
+int get_valid_until(int wc, int addr) method_id {
+    int orcl_hash = slice_hash(begin_cell().store_uint(4, 3).store_int(wc, 8).store_uint(addr, 256).end_cell().begin_parse());
+    (slice orcl, int f) = orcls.udict_get?(256, orcl_hash);
+    if (f) {
+        return orcl.preload_uint(16);
+    }
+    return 0;
+}
+
+() register(int msg_value, int wc, int addr) impure {
+    var (orcls, store_price) = load_data();
+    int paid_until = msg_value / store_price << 20; ;; ~ *1_000_000 
+    throw_unless(50, paid_until > 0); ;; not enough Grams to subscribe
+    paid_until += now();
+    orcls = update_oracle(orcls, 
+        begin_cell().store_uint(4, 3).store_int(wc, 8).store_uint(addr, 256).end_cell().begin_parse(), 
+        paid_until);
+    return store_data(orcls, store_price);
+}
+
+
+() update(int msg_value, slice s_addr) impure {
+    var (orcls, store_price) = load_data();
+    int paid_until = (msg_value / store_price) << 20; ;; ~ *1_000_000 
+    throw_unless(50, paid_until > 0); ;; not enough Grams to subscribe
+    paid_until += now();
+    orcls = update_oracle(orcls, 
+        s_addr, 
+        paid_until);
+    return store_data(orcls, store_price);
+}
+
+() recv_external(slice in_msg) impure {
+    var ds = get_data().begin_parse();
+    var (init, orcls, store_price) = (ds~load_uint(1), 
+        ds~load_dict(),
+        ds.preload_uint(32));
+    accept_message();
+    return store_data(orcls, store_price);
+}
+
+() recv_internal(int msg_value, cell in_msg_cell, slice in_msg) impure {
+  slice cs = in_msg_cell.begin_parse();
+  int flags = cs~load_uint(4);
+  if (flags & 1) {
+    return ();
+  }
+  slice s_addr = cs~load_msg_addr();
+  if (in_msg.slice_empty?()) {
+    return ();
+  }
+  int op = in_msg~load_uint(32);
+  if (op == 0) {
+    return ();
+  }
+  int query_id = in_msg~load_uint(64);
+  if (op == 0xaaeeee) {
+    (int wc, int addr) = (in_msg~load_int(8), in_msg.preload_uint(256));
+    return register(msg_value, wc, addr);
+  }
+  if (op == 0xbbeeee) {
+    return update(msg_value, s_addr);
+  }
+  return ();
+}
+
+() run_ticktock() impure {
+
+}
+
+;; getters
+(cell, int) getstorage() method_id {
+    var ds = get_data().begin_parse();
+    return (ds~load_dict(),
+        ds.preload_uint(256));
+}
