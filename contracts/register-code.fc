@@ -25,7 +25,7 @@ cell update_oracle(cell orcls, slice orcl_addr, int paid_until) impure {
     return orcls;
 }
 
-int get_valid_until(int wc, int addr) method_id {
+int get_valid_until(cell orcls, int wc, int addr) method_id {
     int orcl_hash = slice_hash(begin_cell().store_uint(4, 3).store_int(wc, 8).store_uint(addr, 256).end_cell().begin_parse());
     (slice orcl, int f) = orcls.udict_get?(256, orcl_hash);
     if (f) {
