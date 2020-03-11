@@ -79,6 +79,27 @@
     ifnot (time) {
         (real_time, epoch_data, f) = udict_get_max?(history, 32);
     }
+    ifnot (f) {
+        ;; send money back
+        throw_unless(51, f);
+    }
+
+    var (data, participated, orcls) = epoch_data~load_int(32), 
+        epoch_data~load_uint(32)
+        epoch_data.preload_dict();
+
+    var msg = begin_cell()
+        .store_uint(0xc4ff, 17)
+        .store_slice(register_addr)
+        .store_grams(0)
+        .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
+        .store_uint(0xcceeee, 32)
+        .store_uint(0, 64)
+        .store_uint(participated, 32)
+        .store_ref(orcls)
+        .end_cell();
+    send_raw_message(msg, 3);
+
     var msg = begin_cell()
         .store_uint(0xc4ff, 17)
         .store_slice(receiver)
@@ -87,7 +108,7 @@
         .store_uint(0x6f72636c, 32)
         .store_uint(0, 64)
         .store_uint(real_time, 32)
-        .store_slice(epoch_data)
+        .store_int(data, 32)
         .end_cell();
     return send_raw_message(msg, 64);
 }
@@ -162,7 +183,7 @@
                     counter += s_counter.preload_uint(16);
                 }
             }
-            history~udict_set(32, last_updated_time, begin_cell().store_int(data, 32).end_cell().begin_parse());            
+            history~udict_set(32, last_updated_time, begin_cell().store_int(data, 32).store_uint(participated, 32).store_dict(orcls).end_cell().begin_parse());            
         }
         last_updated_time = now();
     }
@@ -183,3 +204,6 @@
 (int, int, int, cell, int, int, cell, cell) getstorage() method_id {
     return load_data();
 }
+
+;; TODO:
+;; - send_money_back
