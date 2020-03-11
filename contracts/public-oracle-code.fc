@@ -156,7 +156,7 @@
     return send_data(s_addr, orcl, data);
   }
   if (op == 0xbbeeee) {
-    int time = in_msg~load_int(32);
+    int time = in_msg~load_int(64);
     return request_data(s_addr, in_msg, time);
   }
   return ();

@@ -15,7 +15,6 @@
 ;; providers dict(int type =>  dict(url => slice p_addr, int price_per_call, int grams_pool, int valid_until) )
 ;; oracle dict(int address =>  slice(int last_update, int reputation, int calls_interval, int stake ) )
 
-;; send_data(s_addr, type, url, cell data)
 ;; request_data(int msg_value, type, url, slice receiver)
 ;; pay(type, url, slice receiver)
 ;; panish()
@@ -30,6 +29,52 @@
         s_orcl~load_int(32),
         s_orcl~load_uint(32),
         s_orcl~load_uint(32));
+}
+
+() request_data(int msg_value, int t, slice url, slice s_receiver, int time) impure {
+    var (providers, orcls) = load_data();
+    ;; get info about provider
+    cell c_type = providers.udict_get_ref(8, t);
+    throw_if(52, c_type.null?()); ;; invalid type
+
+    ;; pad with zeros 
+    slice url = begin_cell().store_slice(url).set_zeros(8).end_cell().begin_parse();
+    var (prx, s_provider, left, f) = c_type.pfxdict_get?(1023, url);
+    throw_unless(53, f & left.slice_empty?()); ;; provider not exists
+    var (wc, p_addr, price_per_call, gram_pool, valid_until) = (s_provider~load_int(8), 
+        s_provider~load_uint(256),
+        s_provider~load_uint(32), 
+        s_provider~load_grams(),
+        s_provider~load_uint(32));
+
+    throw_unless(58, msg_value != price_per_call); ;; not enough Grams for request
+    gram_pool += msg_value;
+
+    s_provider = begin_cell()
+        .store_int(wc, 8)
+        .store_uint(p_addr, 256) 
+        .store_uint(price_per_call, 32) 
+        .store_grams(gram_pool)
+        .store_uint(valid_until, 32) ;; expired in 3 monthes
+        .end_cell().begin_parse();
+
+    var (c_type, f) = c_type.pfxdict_set?(1023, url, s_provider);
+    providers = providers.udict_set_ref(8, t, c_type);
+    store_data(orcls, providers);
+    ;; send data
+    var msg = begin_cell()
+        .store_uint(0xc4ff, 17)
+        .store_uint(4, 3)
+        .store_int(wc, 8)
+        .store_uint(p_addr, 256)
+        .store_grams(0)
+        .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
+        .store_uint(0xbbeeee, 32)
+        .store_uint(0, 64)
+        .store_slice(s_receiver)
+        .store_int(time, 64)
+        .end_cell();
+    return send_raw_message(msg, 3);     
 }
 
 () send_data(slice s_addr, int t, slice url, cell data) impure {
