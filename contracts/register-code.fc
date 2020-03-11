@@ -1,95 +1,102 @@
+(builder) set_zeros(builder b, int n) asm "STZEROES";
 
-(cell, int) load_data() method_id {
-    ;; dict oracles, int price_per_million_blocks
+(cell, cell) load_data() method_id {
     var ds = get_data().begin_parse();
     return (ds~load_dict(),
-        ds.preload_uint(32));
+        ds~load_dict());
 }
-
-() store_data(cell orcls, int store_price) impure {
+() store_data(cell providers, cell orcls) impure {
     set_data(begin_cell()
+        .store_dict(providers)
         .store_dict(orcls)
-        .store_uint(store_price, 32)
         .end_cell());
 }
 
-cell update_oracle(cell orcls, slice orcl_addr, int paid_until) impure {
-    int orcl_hash = slice_hash(orcl_addr);
-    (slice orcl, int f) = orcls.udict_get?(256, orcl_hash);
-    int valid_until = 0;
-    if (f) {
-        valid_until = orcl.preload_uint(16);
-    }
-    valid_until += paid_until;
-    orcls~udict_set(256, orcl_hash, begin_cell().store_uint(valid_until, 16).store_slice(orcl_addr).end_cell().begin_parse());
-    return orcls;
+;; providers dict(int type =>  dict(url => slice p_addr, int price_per_call, int grams_pool, int valid_until) )
+;; oracle dict(int address =>  slice(int last_update, int reputation, int calls_interval, int stake ) )
+
+;; send_data(s_addr, type, url, cell data)
+;; request_data(int msg_value, type, url, slice receiver)
+;; pay(type, url, slice receiver)
+;; panish()
+
+;; type:
+;; 0 -> public
+;; 1 -> private
+;; 2 -> trigger
+
+() register_provider(int msg_value, int t, slice url, int wc, int p_addr, int price_per_call) impure {
+    var (providers, orcls) = load_data();
+    throw_unless(51, msg_value != 500000); ;; not enough Grams to register
+    slice s_orcl = begin_cell()
+        .store_int(wc, 8)
+        .store_uint(p_addr, 256) 
+        .store_uint(price_per_call, 32) 
+        .store_grams(0)
+        .store_uint(now() + 7889229, 32) ;; expired in 3 monthes
+        .end_cell().begin_parse();
+    cell c_type = providers.udict_get_ref(8, t);
+    throw_if(52, c_type.null?()); ;; invalid type
+
+    ;; pad with zeros 
+    slice url = begin_cell().store_slice(url).set_zeros(8).end_cell().begin_parse();
+
+    var (prx, val, left, f) = c_type.pfxdict_get?(1023, url);
+    throw_if(53, f & left.slice_empty?()); ;; provider exists
+
+    var (c_type, f) = c_type.pfxdict_set?( 1023, url, s_orcl);
+    providers = providers.udict_set_ref(8, t, c_type);
+    return store_data(orcls, providers);
 }
 
-int get_valid_until(cell orcls, int wc, int addr) method_id {
-    int orcl_hash = slice_hash(begin_cell().store_uint(4, 3).store_int(wc, 8).store_uint(addr, 256).end_cell().begin_parse());
-    (slice orcl, int f) = orcls.udict_get?(256, orcl_hash);
-    if (f) {
-        return orcl.preload_uint(16);
-    }
-    return 0;
+() register_oracle(int msg_value, slice s_addr) impure {
+    var (providers, orcls) = load_data();
+    throw_unless(50, msg_value != 5000); ;; not enough Grams to stake
+    slice s_orcl = begin_cell()
+        .store_uint(now(), 32)
+        .store_uint(1000, 32) ;; initial reputation
+        .store_uint(36000, 32) ;; initial calls_interval, 1 call per 10min
+        .store_uint(msg_value, 32)
+        .end_cell().begin_parse();
+    s_addr = s_addr.skip_bits(3);
+    (orcls, int f) = orcls.idict_replace?(8 + 256, s_addr~load_uint(256 + 8), s_orcl);
+    throw_unless(54, f);
+    return store_data(orcls, providers);
 }
 
-() register(int msg_value, int wc, int addr) impure {
-    var (orcls, store_price) = load_data();
-    int paid_until = msg_value / store_price << 20; ;; ~ *1_000_000 
-    throw_unless(50, paid_until > 0); ;; not enough Grams to subscribe
-    paid_until += now();
-    orcls = update_oracle(orcls, 
-        begin_cell().store_uint(4, 3).store_int(wc, 8).store_uint(addr, 256).end_cell().begin_parse(), 
-        paid_until);
-    return store_data(orcls, store_price);
-}
-
-
-() update(int msg_value, slice s_addr) impure {
-    var (orcls, store_price) = load_data();
-    int paid_until = (msg_value / store_price) << 20; ;; ~ *1_000_000 
-    throw_unless(50, paid_until > 0); ;; not enough Grams to subscribe
-    paid_until += now();
-    orcls = update_oracle(orcls, 
-        s_addr, 
-        paid_until);
-    return store_data(orcls, store_price);
-}
-
-() recv_external(slice in_msg) impure {
-    var ds = get_data().begin_parse();
-    var (init, orcls, store_price) = (ds~load_uint(1), 
-        ds~load_dict(),
-        ds.preload_uint(32));
-    accept_message();
-    return store_data(orcls, store_price);
-}
-
-() recv_internal(int msg_value, cell in_msg_cell, slice in_msg) impure {
-  slice cs = in_msg_cell.begin_parse();
-  int flags = cs~load_uint(4);
-  if (flags & 1) {
-    return ();
-  }
-  slice s_addr = cs~load_msg_addr();
-  if (in_msg.slice_empty?()) {
-    return ();
-  }
-  int op = in_msg~load_uint(32);
-  if (op == 0) {
-    return ();
-  }
-  int query_id = in_msg~load_uint(64);
-  if (op == 0xaaeeee) {
-    (int wc, int addr) = (in_msg~load_int(8), in_msg.preload_uint(256));
-    return register(msg_value, wc, addr);
-  }
-  if (op == 0xbbeeee) {
-    return update(msg_value, s_addr);
-  }
-  return ();
-}
+;;() recv_external(slice in_msg) impure {
+;;    var ds = get_data().begin_parse();
+;;    var (init, orcls, store_price) = (ds~load_uint(1), 
+;;        ds~load_dict(),
+;;        ds.preload_uint(32));
+;;    accept_message();
+;;    return store_data(orcls, store_price);
+;;}
+;;
+;;() recv_internal(int msg_value, cell in_msg_cell, slice in_msg) impure {
+;;  slice cs = in_msg_cell.begin_parse();
+;;  int flags = cs~load_uint(4);
+;;  if (flags & 1) {
+;;    return ();
+;;  }
+;;  slice s_addr = cs~load_msg_addr();
+;;  if (in_msg.slice_empty?()) {
+;;    return ();
+;;  }
+;;  int op = in_msg~load_uint(32);
+;;  if (op == 0) {
+;;    return ();
+;;  }
+;;  int query_id = in_msg~load_uint(64);
+;;  if (op == 0xaaeeee) {
+;;    (int wc, int addr) = (in_msg~load_int(8), in_msg.preload_uint(256));
+;;    return register(msg_value, wc, addr);
+;;  }
+;;  if (op == 0xbbeeee) {
+;;    return update(msg_value, s_addr);
+;;  }
+;;  return ();
+;;}
 
 () run_ticktock() impure {
 
@@ -101,3 +108,12 @@ int get_valid_until(cell orcls, int wc, int addr) method_id {
     return (ds~load_dict(),
         ds.preload_uint(256));
 }
+
+;; TODO:
+;; - upgrade protocol
+;; - withdraw_stake
+;; - remove_inactive
+;; - make addres shorter
+;; - protect panish fallback from unfair provider 
+;; - create provider from contract
+;; - allow few public providers for the same url with different price 
