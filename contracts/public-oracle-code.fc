@@ -1,7 +1,7 @@
 
 (int, int, int, cell, int, int, cell, cell) load_data() method_id {
     var ds = get_data().begin_parse();
-    return (ds~load_uint(3 + 8 + 256),
+    return (ds~load_uint(8 + 256),
         ds~load_uint(32),
         ds~load_uint(32),
         ds~load_dict(),
@@ -20,7 +20,7 @@
         cell curent_round,
         cell history) impure {
     set_data(begin_cell()
-        .store_uint(register_addr, 3 + 8 + 256)
+        .store_uint(register_addr, 8 + 256)
         
         .store_uint(min_counter, 32)
         .store_uint(participated, 32)
@@ -48,10 +48,11 @@
     cell curent_round,
     cell history) = load_data();
 
-    ;; check if sender has permission, only register can send data 
-    throw_unless(50, register_addr == s_addr~load_uint(3 + 8 + 256)); ;; 100::wc::addr
+    ;; check if sender has permission, only register can send data
+    s_addr~skip_bits(3);
+    throw_unless(50, register_addr == s_addr~load_uint(8 + 256)); ;; 100::wc::addr
     
-    orcls~idict_set(3 + 8 + 256, orcl, begin_cell().store_int(data, 32).end_cell().begin_parse());
+    orcls~idict_set(8 + 256, orcl, begin_cell().store_int(data, 32).end_cell().begin_parse());
     participated += 1;
     (slice s_counter, int f) = curent_round.idict_get?(32, data);
     int counter = 0;
@@ -74,7 +75,7 @@
     cell history) = load_data();
 
     ;; check if sender has permission, only register can request data 
-    throw_unless(50, register_addr == s_addr~load_uint(3 + 8 + 256)); ;; 100::wc::addr
+    throw_unless(50, register_addr == s_addr~load_uint(8 + 256)); ;; 100::wc::addr
     var (real_time, epoch_data, f) = udict_get_next?(history, 32, time);
     ifnot (time) {
         (real_time, epoch_data, f) = udict_get_max?(history, 32);
@@ -152,7 +153,7 @@
   }
   int query_id = in_msg~load_uint(64);
   if (op == 0xaaeeee) {
-    (int orcl, int data) = (in_msg~load_uint(3 + 8 + 256), in_msg.preload_int(32));
+    (int orcl, int data) = (in_msg~load_uint(8 + 256), in_msg.preload_int(32));
     return send_data(s_addr, orcl, data);
   }
   if (op == 0xbbeeee) {
