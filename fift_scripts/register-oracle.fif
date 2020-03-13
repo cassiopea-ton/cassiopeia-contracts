@@ -1,0 +1,11 @@
+#!/usr/bin/fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+
+"build/register-oracle"  constant savefile
+
+<b 0xaaeeee 32 u, 0 64 u, b> 
+
+2 boc+>B 
+savefile +".boc" tuck B>file
+."(Saved to file " type .")" cr
