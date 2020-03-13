@@ -175,7 +175,7 @@
     return store_data(orcls, providers, p_urls, free_pool); 
 }
 
-() request_data(int msg_value, int t, slice url, slice s_receiver, int time) impure {
+() request_data(int msg_value, int t, slice url, int s_receiver, int time) impure {
     var (providers, orcls, p_urls, free_pool) = load_data();
     ;; get info about provider
     cell c_type = providers.udict_get_ref(8, t);
@@ -215,7 +215,7 @@
         .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
         .store_uint(0xbbeeee, 32)
         .store_uint(0, 64)
-        .store_slice(s_receiver)
+        .store_uint(s_receiver, 8 + 256)
         .store_int(time, 64)
         .end_cell();
     return send_raw_message(msg, 3);     
@@ -313,39 +313,68 @@
     return store_data(orcls, providers, p_urls, free_pool);
 }
 
-;;() recv_external(slice in_msg) impure {
-;;    var ds = get_data().begin_parse();
-;;    var (init, orcls, store_price) = (ds~load_uint(1), 
-;;        ds~load_dict(),
-;;        ds.preload_uint(32));
-;;    accept_message();
-;;    return store_data(orcls, store_price);
-;;}
-;;
-;;() recv_internal(int msg_value, cell in_msg_cell, slice in_msg) impure {
-;;  slice cs = in_msg_cell.begin_parse();
-;;  int flags = cs~load_uint(4);
-;;  if (flags & 1) {
-;;    return ();
-;;  }
-;;  slice s_addr = cs~load_msg_addr();
-;;  if (in_msg.slice_empty?()) {
-;;    return ();
-;;  }
-;;  int op = in_msg~load_uint(32);
-;;  if (op == 0) {
-;;    return ();
-;;  }
-;;  int query_id = in_msg~load_uint(64);
-;;  if (op == 0xaaeeee) {
-;;    (int wc, int addr) = (in_msg~load_int(8), in_msg.preload_uint(256));
-;;    return register(msg_value, wc, addr);
-;;  }
-;;  if (op == 0xbbeeee) {
-;;    return update(msg_value, s_addr);
-;;  }
-;;  return ();
-;;}
+() recv_external(slice in_msg) impure {
+    var ds = get_data().begin_parse();
+    var (init, providers, orcls, p_urls, free_pool) = (ds~load_uint(1), 
+        ds~load_dict(),
+        ds~load_dict(),
+        ds~load_dict(),
+        ds~load_grams());
+    accept_message();
+    return store_data(providers, orcls, p_urls, free_pool);
+}
+
+() recv_internal(int msg_value, cell in_msg_cell, slice in_msg) impure {
+  slice cs = in_msg_cell.begin_parse();
+  int flags = cs~load_uint(4);
+  if (flags & 1) {
+    return ();
+  }
+  slice s_addr = cs~load_msg_addr();
+  if (in_msg.slice_empty?()) {
+    return ();
+  }
+  int op = in_msg~load_uint(32);
+  if (op == 0) {
+    return ();
+  }
+  int query_id = in_msg~load_uint(64);
+  if (op == 0xaaeeee) {
+    (int wc, int addr) = (in_msg~load_int(8), in_msg.preload_uint(256));
+    return register_oracle(msg_value, s_addr);
+  }
+  if (op == 0xbbeeee) {
+    int t = in_msg~load_uint(8);
+    (in_msg, cell url) = in_msg.load_ref();
+    (int wc, int p_addr, int price_per_call) = (in_msg~load_int(8), in_msg~load_uint(256), in_msg~load_int(32));
+    return register_provider(msg_value, t, url.begin_parse(), wc, p_addr, price_per_call);
+  }
+  if (op == 0xcceeee) {
+    int t = in_msg~load_uint(8);
+    (in_msg, cell url) = in_msg.load_ref();
+    int c_receiver = in_msg~load_uint(8 + 258);
+    int time = in_msg.preload_int(64);
+    return request_data(msg_value, t, url.begin_parse(), c_receiver, time);
+  }
+  if (op == 0xddeeee) {
+    int t = in_msg~load_uint(8);
+    (in_msg, cell url) = in_msg.load_ref();
+    cell data = in_msg.preload_dict();
+    return send_data(s_addr, t, url.begin_parse(), data);
+  }
+  if (op == 0xeeeeee) {
+    (int t, cell o_addrs) = (in_msg~load_uint(8), in_msg.preload_dict());
+    return punish(s_addr, t, o_addrs);
+  }
+  if (op == 0xffeeee) {
+    (int t, int participated, cell o_addrs) = (in_msg~load_uint(8), in_msg~load_uint(32), in_msg.preload_dict());
+    return pay(s_addr, t, participated, o_addrs);
+  }
+  if (op == 0xeeaaee) {
+    return withdraw(s_addr, in_msg~load_grams());
+  }
+  return ();
+}
 
 () run_ticktock() impure {
 
