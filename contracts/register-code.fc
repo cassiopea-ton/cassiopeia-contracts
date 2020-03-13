@@ -19,22 +19,106 @@
 ;; providers dict(int type =>  dict(url => slice p_addr, int price_per_call, int grams_pool, int valid_until) )
 ;; oracle dict(int address =>  slice(int last_update, int reputation, int calls_interval, int stake ) )
 
-;; withdraw
-;; panish()
-
 ;; type:
 ;; 0 -> public
 ;; 1 -> private
 ;; 2 -> trigger
 
-(int, int, int, int) get_oracle(slice s_orcl) method_id {
+(int, int, int, int, int) get_oracle(slice s_orcl) method_id {
     return(s_orcl~load_uint(32),
         s_orcl~load_int(32),
         s_orcl~load_uint(32),
+        s_orcl~load_grams(),
         s_orcl~load_uint(32));
 }
 
-() pay(slice s_addr, int t, int participated, cell orcls) impure {
+() withdraw(slice s_addr, int amount) impure {
+    var (providers, orcls, p_urls, free_pool) = load_data();
+
+    int o_addr = s_addr.skip_bits(3).preload_uint(8 + 256);
+    var (s_orcl, f) = idict_get?(orcls, 8 + 256, o_addr);
+    throw_unless(55, f);
+    var (last_call, reput, call_inrv, profit, stake) = get_oracle(s_orcl);
+    throw_if(67, profit < amount);
+    profit -= amount;
+
+    ;; update oracle
+    slice s_orcl = begin_cell()
+        .store_uint(last_call, 32)
+        .store_int(reput, 32)
+        .store_uint(call_inrv, 32) 
+        .store_grams(profit)
+        .store_uint(stake, 32)
+        .end_cell().begin_parse();
+    orcls~idict_set(8 + 256, o_addr, s_orcl);
+    
+    ;; send reward
+    var msg = begin_cell()
+        .store_uint(0xc4ff, 17)
+        .store_slice(s_addr)
+        .store_grams(amount)
+        .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1 + 32 + 64)
+        .end_cell();
+    send_raw_message(msg, 3);
+
+    return store_data(orcls, providers, p_urls, free_pool); 
+}
+
+() punish(slice s_addr, int t, cell o_addrs) impure {
+    var (providers, orcls, p_urls, free_pool) = load_data();
+    ;; get info about provider
+    cell c_type = providers.udict_get_ref(8, t);
+    throw_if(52, c_type.null?()); ;; invalid type
+
+    s_addr~skip_bits(3); 
+    (slice url, int f) = p_urls.udict_get?(256 + 8, s_addr.preload_uint(256 + 8));
+    throw_unless(60, f);
+    var (prx, s_provider, left, f) = c_type.pfxdict_get?(1023, url);
+    throw_unless(53, f & left.slice_empty?()); ;; provider not exists
+    var (wc, p_addr, price_per_call, gram_pool, valid_until) = (s_provider~load_int(8), 
+        s_provider~load_uint(256),
+        s_provider~load_uint(32), 
+        s_provider~load_grams(),
+        s_provider~load_uint(32));
+
+    var (o_addr, s_orcl, f) = idict_get_min?(o_addrs, 8 + 256);
+    if (f) {
+        var (s_orcl, f) = idict_get?(orcls, 8 + 256, o_addr);
+        throw_unless(55, f);
+        var (last_call, reput, call_inrv, profit, stake) = get_oracle(s_orcl);
+        
+        reput -= 100;
+        if (reput < 0) {
+            free_pool += stake;
+            stake = 0;
+        }
+
+        ;; update oracle
+        slice s_orcl = begin_cell()
+            .store_uint(last_call, 32)
+            .store_int(reput, 32)
+            .store_uint(call_inrv + 72000, 32) 
+            .store_grams(profit)
+            .store_uint(stake, 32)
+            .end_cell().begin_parse();
+        orcls~idict_set(8 + 256, o_addr, s_orcl);
+        (o_addr, s_orcl, f) = idict_get_next?(o_addrs, 8 + 256, o_addr);
+    }
+
+    s_provider = begin_cell()
+        .store_int(wc, 8)
+        .store_uint(p_addr, 256) 
+        .store_uint(price_per_call, 32) 
+        .store_grams(gram_pool)
+        .store_uint(valid_until, 32) ;; expired in 3 monthes
+        .end_cell().begin_parse();
+
+    var (c_type, f) = c_type.pfxdict_set?(1023, url, s_provider);
+    providers = providers.udict_set_ref(8, t, c_type);
+    return store_data(orcls, providers, p_urls, free_pool); 
+}
+
+() pay(slice s_addr, int t, int participated, cell o_addrs) impure {
     var (providers, orcls, p_urls, free_pool) = load_data();
     ;; get info about provider
     cell c_type = providers.udict_get_ref(8, t);
@@ -55,18 +139,27 @@
 
     int orcl_payment = price_per_call / participated;
 
-    var (o_addr, s_orcl, f) = idict_get_min?(orcls, 8 + 256);
-    if (f) {
+    var (o_addr, s_orcl, f) = idict_get_min?(o_addrs, 8 + 256);
+    while (f & participated) {
         gram_pool -= orcl_payment;
-        var msg = begin_cell()
-            .store_uint(0xc4ff, 17)
-            .store_uint(4, 3)
-            .store_uint(o_addr, 258 + 8)
-            .store_grams(orcl_payment)
-            .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1 + 32 + 64)
-            .end_cell();
-        send_raw_message(msg, 3);
-        (o_addr, s_orcl, f) = idict_get_next?(orcls, 8 + 256, o_addr);
+        throw_unless(61, gram_pool >= 0);
+        throw_unless(62, participated > 0);
+        participated -= 1;
+
+        var (s_orcl, f) = idict_get?(orcls, 8 + 256, o_addr);
+        throw_unless(55, f);
+        var (last_call, reput, call_inrv, profit, stake) = get_oracle(s_orcl);
+
+        ;; update oracle
+        slice s_orcl = begin_cell()
+            .store_uint(last_call, 32)
+            .store_int(reput + 1, 32)
+            .store_uint(call_inrv - 10, 32) 
+            .store_grams(profit + orcl_payment)
+            .store_uint(stake, 32)
+            .end_cell().begin_parse();
+        orcls~idict_set(8 + 256, o_addr, s_orcl);
+        (o_addr, s_orcl, f) = idict_get_next?(o_addrs, 8 + 256, o_addr);
     }
 
     s_provider = begin_cell()
@@ -74,7 +167,7 @@
         .store_uint(p_addr, 256) 
         .store_uint(price_per_call, 32) 
         .store_grams(gram_pool)
-        .store_uint(valid_until, 32) ;; expired in 3 monthes
+        .store_uint(valid_until, 32)
         .end_cell().begin_parse();
 
     var (c_type, f) = c_type.pfxdict_set?(1023, url, s_provider);
@@ -133,7 +226,7 @@
     s_addr~skip_bits(3);
     var (s_orcl, f) = idict_get?(orcls, 8 + 256, s_addr~load_int(8 + 256));
     throw_unless(55, f);
-    var (last_call, reput, call_inrv, stake) = get_oracle(s_orcl);
+    var (last_call, reput, call_inrv, profit, stake) = get_oracle(s_orcl);
     throw_if(56, last_call + call_inrv < now());
     throw_if(57, reput < 0);
 
@@ -142,6 +235,7 @@
         .store_uint(now(), 32)
         .store_int(reput, 32)
         .store_uint(call_inrv, 32) 
+        .store_grams(profit)
         .store_uint(stake, 32)
         .end_cell().begin_parse();
     orcls~idict_set(8 + 256, s_addr~load_int(256 + 8), s_orcl);
@@ -208,8 +302,9 @@
     throw_unless(50, msg_value != 5000); ;; not enough Grams to stake
     slice s_orcl = begin_cell()
         .store_uint(now(), 32)
-        .store_int(1000, 32) ;; initial reputation
+        .store_int(100, 32) ;; initial reputation
         .store_uint(36000, 32) ;; initial calls_interval, 1 call per 10min
+        .store_grams(0)
         .store_uint(msg_value, 32)
         .end_cell().begin_parse();
     s_addr = s_addr.skip_bits(3);
@@ -274,3 +369,4 @@
 ;; - create provider from contract
 ;; - allow few public providers for the same url with different price
 ;; - allow remove provider by voting
+;; - reputation limits
