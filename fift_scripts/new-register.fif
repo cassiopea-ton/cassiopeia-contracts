@@ -11,7 +11,9 @@ register-source include
 <b 
     0 1 u,
     dictnew dict,
-    0 32 u,
+    dictnew dict,
+    dictnew dict,
+    0 Gram,
 b> // data
 null // no libraries
 <b b{011011} s, 3 roll ref, rot ref, swap dict, b>  // create StateInit
