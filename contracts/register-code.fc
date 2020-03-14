@@ -299,16 +299,16 @@
 
 () register_oracle(int msg_value, slice s_addr) impure {
     var (providers, orcls, p_urls, free_pool) = load_data();
-    throw_unless(50, msg_value != 5000); ;; not enough Grams to stake
+    throw_unless(50, msg_value == 5000); ;; not enough Grams to stake
     slice s_orcl = begin_cell()
         .store_uint(now(), 32)
         .store_int(100, 32) ;; initial reputation
         .store_uint(36000, 32) ;; initial calls_interval, 1 call per 10min
         .store_grams(0)
         .store_uint(msg_value, 32)
+        .store_slice(s_addr)
         .end_cell().begin_parse();
-    s_addr = s_addr.skip_bits(3);
-    (orcls, int f) = orcls.idict_replace?(8 + 256, s_addr~load_int(256 + 8), s_orcl);
+    (orcls, int f) = orcls.udict_add?(256, slice_hash(s_addr), s_orcl);
     throw_unless(54, f);
     return store_data(orcls, providers, p_urls, free_pool);
 }
