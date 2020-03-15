@@ -1,0 +1,18 @@
+#!/usr/bin/fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+
+"build/request-data"  constant savefile
+4 :$1..n
+$1 =: url-str
+$2 =: receiver-source
+$3 "0" replace-if-null parse-int =: t
+$4 "-1" replace-if-null parse-int =: time
+
+receiver-source +".addr" load-address 2constant r_addr
+
+<b 0xcceeee 32 u, 0 64 u, t 8 u, <b url-str $, b> ref, <b r_addr addr, b> ref, time 64 i, b> 
+
+2 boc+>B 
+savefile +".boc" tuck B>file
+."(Saved to file " type .")" cr

@@ -356,9 +356,7 @@
     return request_data(msg_value, t, url.begin_parse(), c_receiver, time);
   }
   if (op == 0xddeeee) {
-    int t = in_msg~load_uint(8);
-    (in_msg, cell url) = in_msg.load_ref();
-    cell data = in_msg.preload_ref();
+    (int t, cell url, cell data) = (in_msg~load_uint(8), in_msg~load_ref(), in_msg.preload_ref());
     return send_data(s_addr, t, url.begin_parse(), data);
   }
   if (op == 0xeeeeee) {
