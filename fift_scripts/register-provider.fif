@@ -1,0 +1,16 @@
+#!/usr/bin/fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+
+"build/register-provider"  constant savefile
+4 :$1..n
+$1  =: url-str
+$2 "50" replace-if-null parse-int =: price_per_call
+$3 "0" replace-if-null parse-int =: t
+$4 "./build/new-provider" replace-if-null  =: provider-source
+
+<b 0xaaeeee 32 u, 0 64 u, t 8 u, url ref, provider-source +".addr" load-address addr, price_per_call 32 i, b> 
+
+2 boc+>B 
+savefile +".boc" tuck B>file
+."(Saved to file " type .")" cr
