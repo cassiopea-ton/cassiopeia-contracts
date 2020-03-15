@@ -270,15 +270,16 @@
 
 () register_provider(int msg_value, int t, slice url, int wc, int p_addr, int price_per_call) impure {
     var (providers, orcls, p_urls, free_pool) = load_data();
-    throw_unless(51, msg_value != 500000); ;; not enough Grams to register
+    throw_unless(51, msg_value == 500000); ;; not enough Grams to register
     cell c_type = providers.udict_get_ref(8, t);
-    throw_if(52, c_type.null?()); ;; invalid type
-
+    
     ;; pad with zeros 
     slice url = begin_cell().store_slice(url).set_zeros(8).end_cell().begin_parse();
 
-    var (prx, val, left, f) = c_type.pfxdict_get?(1023, url);
-    throw_if(53, f & left.slice_empty?()); ;; provider exists
+    ifnot (c_type.null?()) {
+        var (prx, val, left, f) = c_type.pfxdict_get?(1023, url);
+        throw_if(53, f & left.slice_empty?()); ;; provider exists
+    }
     slice s_addr =  begin_cell()
         .store_int(wc, 8)
         .store_uint(p_addr, 256)
@@ -293,7 +294,7 @@
 
     var (c_type, f) = c_type.pfxdict_set?(1023, url, s_provider);
     providers~udict_set_ref(8, t, c_type);
-    p_urls~udict_set(8 + 256, s_addr.preload_uint(8 + 256), url);
+    p_urls~udict_set(8 + 256, s_addr.preload_uint(8 + 256), url); ;; TODO: replace with slice hash!
     return store_data(providers, orcls, p_urls, free_pool);
 }
 

@@ -10,8 +10,7 @@
 
 5000 amount !
 1 idx !
-<b b{00} s, bounce 1 i, b{0100} s, -1 <b idx @ 32 u, b> hashu addr, b{100} s, dest_addr addr, amount @ Gram, 0 9 64 32 + + 1+ u, 
-int_msg_body @ <s 2dup s-fits? not rot over 1 i, -rot { drop int_msg_body @ ref, } { s, } cond b>  int_message !
+prepare-internal-msg
 
 amount @ int_message @ int_msg_body @ <s recv_internal register-code initial_storage c7 runvmctx
 test_code

@@ -43,3 +43,6 @@ file-base +".addr" load-address 2constant dest_addr
 dest_addr nip , dictnew , 
 1 tuple 
 constant c7
+
+{ <b b{00} s, bounce 1 i, b{0100} s, -1 <b idx @ 32 u, b> hashu addr, b{100} s, dest_addr addr, amount @ Gram, 0 9 64 32 + + 1+ u, 
+int_msg_body @ <s 2dup s-fits? not rot over 1 i, -rot { drop int_msg_body @ ref, } { s, } cond b>  int_message ! } : prepare-internal-msg

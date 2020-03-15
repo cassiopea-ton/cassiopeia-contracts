@@ -1,0 +1,31 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+
+"tests/register-utils.fif" include
+
+"build/register-provider.boc" file>B B>boc int_msg_body ! 
+
+// test # 0 register provider 
+
+500000 amount !
+1 idx !
+prepare-internal-msg
+
+amount @ int_message @ int_msg_body @ <s recv_internal register-code initial_storage c7 runvmctx
+test_code
+dup 
+updated_storage !
+boc>B initial_storage boc>B B= 0= test_state
+
+// test # 1 try to register provider in second time
+
+// amount @ int_message @ int_msg_body @ <s recv_internal register-code updated_storage @ c7 runvmctx
+// swap 54 test_code_fail
+// boc>B updated_storage @ boc>B B= test_state
+
+// // test # 2 try to register oracle with insufficient amount
+// 300 amount !
+// amount @ int_message @ int_msg_body @ <s recv_internal register-code initial_storage c7 runvmctx
+// swap 50 test_code_fail
+// boc>B initial_storage boc>B B= test_state

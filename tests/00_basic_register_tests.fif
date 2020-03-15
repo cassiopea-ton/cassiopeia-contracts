@@ -22,7 +22,7 @@ b>  boc>B B= test_state
 // test # 1 external message after init
 
 init-msg recv_external register-code updated_storage @ c7 runvmctx
-swap 9 = test_ret_value
+swap 9 test_code_fail
 dup updated_storage !
 boc>B <b 
     dictnew dict,

@@ -9,7 +9,10 @@ $2 "50" replace-if-null parse-int =: price_per_call
 $3 "0" replace-if-null parse-int =: t
 $4 "./build/new-provider" replace-if-null  =: provider-source
 
-<b 0xaaeeee 32 u, 0 64 u, t 8 u, url ref, provider-source +".addr" load-address addr, price_per_call 32 i, b> 
+provider-source +".addr" load-address 2constant p_addr
+
+
+<b 0xbbeeee 32 u, 0 64 u, t 8 u, <b url-str $, b> ref, p_addr addr, price_per_call 32 i, b> 
 
 2 boc+>B 
 savefile +".boc" tuck B>file
