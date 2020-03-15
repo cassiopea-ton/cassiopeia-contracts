@@ -223,8 +223,7 @@
 
 () send_data(slice s_addr, int t, slice url, cell data) impure {
     var (providers, orcls, p_urls, free_pool) = load_data();
-    s_addr~skip_bits(3);
-    var (s_orcl, f) = idict_get?(orcls, 8 + 256, s_addr~load_int(8 + 256));
+    var (s_orcl, f) = udict_get?(orcls, 256, slice_hash(s_addr));
     throw_unless(55, f);
     var (last_call, reput, call_inrv, profit, stake) = get_oracle(s_orcl);
     throw_if(56, last_call + call_inrv < now());
@@ -238,7 +237,7 @@
         .store_grams(profit)
         .store_uint(stake, 32)
         .end_cell().begin_parse();
-    orcls~idict_set(8 + 256, s_addr~load_int(256 + 8), s_orcl);
+    orcls~udict_set(256, slice_hash(s_addr), s_orcl);
 
     ;; get info about provider
     cell c_type = providers.udict_get_ref(8, t);
@@ -359,7 +358,7 @@
   if (op == 0xddeeee) {
     int t = in_msg~load_uint(8);
     (in_msg, cell url) = in_msg.load_ref();
-    cell data = in_msg.preload_dict();
+    cell data = in_msg.preload_ref();
     return send_data(s_addr, t, url.begin_parse(), data);
   }
   if (op == 0xeeeeee) {

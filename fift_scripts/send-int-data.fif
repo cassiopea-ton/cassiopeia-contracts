@@ -1,0 +1,15 @@
+#!/usr/bin/fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+
+"build/send-int-data"  constant savefile
+3 :$1..n
+$1  =: url-str
+$2 parse-int =: int
+$3 "0" replace-if-null parse-int =: t
+
+<b 0xddeeee 32 u, 0 64 u, t 8 u, <b url-str $, b> ref, <b int 32 i, b> ref, b> 
+
+2 boc+>B 
+savefile +".boc" tuck B>file
+."(Saved to file " type .")" cr
