@@ -1,0 +1,45 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+
+variable updated_storage
+variable amount
+variable idx
+variable int_msg_body
+variable int_message
+
+{ { ."success " cr } { "test failed" abort } cond } : test_ret_value
+{ swap 0= test_ret_value } : test_code
+{ = test_ret_value } : test_code_fail
+{ { ."success " cr } { " contract state error: " abort } cond } : test_state
+100000 constant timeout
+true constant bounce
+
+"build/register-code.fif" include <s constant register-code
+"build/public-oracle-code.fif" include <s constant public-oracle-code
+<b
+    0 1 u,
+    dictnew dict,
+    dictnew dict,
+    dictnew dict,
+    0 Gram,
+b> constant preinitial_storage
+<b 
+    dictnew dict,
+    dictnew dict,
+    dictnew dict,
+    0 Gram,
+b> constant initial_storage
+
+"build/register-oracle.boc" file>B B>boc int_msg_body ! 
+"build/new-register" constant file-base
+file-base +".addr" load-address 2constant dest_addr
+
+0 tuple 0x076ef1ea ,
+0 , 0 , 
+1570470873 ,
+1 , 1 , 0 , 
+0 tuple 9223372036854775807 , dictnew , , 
+dest_addr nip , dictnew , 
+1 tuple 
+constant c7

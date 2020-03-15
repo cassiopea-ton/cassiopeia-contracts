@@ -2,47 +2,14 @@
 "TonUtil.fif" include
 "Asm.fif" include
 
-variable updated_storage
-variable amount
-variable int_msg_body
-variable int_message
+"tests/register-utils.fif" include
 
-{ { ."success " cr } { "test failed" abort } cond } : test_ret_value
-{ swap 0= test_ret_value } : test_code
-{ { ."success " cr } { " contract state error: " abort } cond } : test_state
-100000 constant timeout
-true constant bounce
-"build/new-register" constant file-base
-file-base +".addr" load-address 2constant dest_addr
+"build/new-register-query.boc" file>B B>boc constant init-msg 
 
-"build/register-code.fif" include <s constant code
-<b 
-    0 1 u,
-    dictnew dict,
-    dictnew dict,
-    dictnew dict,
-    0 Gram,
-b> constant initial_storage
-"build/new-register-query.boc" file>B B>boc .s constant init-msg 
-
-// [ magic:0x076ef1ea actions:Integer msgs_sent:Integer
-// unixtime:Integer block_lt:Integer trans_lt:Integer
-// rand_seed:Integer balance_remaining:[Integer (Maybe Cell)]
-// myself:MsgAddressInt global_config:(Maybe Cell)
-// ] = SmartContractInfo;
-
-0 tuple 0x076ef1ea ,
-0 , 0 , 
-1570470873 ,
-1 , 1 , 0 , 
-0 tuple 9223372036854775807 , dictnew , , 
-dest_addr nip , dictnew , 
-1 tuple 
-constant c7
 
 // test # 0 external message for init
 
-init-msg recv_external code initial_storage c7 runvmctx
+init-msg recv_external register-code preinitial_storage c7 runvmctx
 test_code
 dup updated_storage !
 boc>B <b 
@@ -54,7 +21,7 @@ b>  boc>B B= test_state
 
 // test # 1 external message after init
 
-init-msg recv_external code updated_storage @ c7 runvmctx
+init-msg recv_external register-code updated_storage @ c7 runvmctx
 swap 9 = test_ret_value
 dup updated_storage !
 boc>B <b 
@@ -71,6 +38,6 @@ b>  boc>B B= test_state
 
 <b b{00} s, bounce 1 i, b{000100} s, dest_addr addr, amount @ Gram, 0 9 64 32 + + 1+ u, int_msg_body @ s, b>  int_message !
 
-amount @ int_message @ int_msg_body @ recv_internal code initial_storage c7 runvmctx
+amount @ int_message @ int_msg_body @ recv_internal register-code initial_storage c7 runvmctx
 test_code
 boc>B initial_storage boc>B B= test_state
