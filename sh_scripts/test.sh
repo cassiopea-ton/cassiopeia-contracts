@@ -14,4 +14,6 @@
 # fift -s fift_scripts/request-data.fif "some.com" "./build/new-wallet" 
 # fift -s tests/04_request_data_tests.fif
 
-fift -s tests/05_pay_tests.fif
+# fift -s tests/05_pay_tests.fif
+
+fift -s tests/06_punish_tests.fif

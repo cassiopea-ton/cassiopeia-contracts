@@ -71,7 +71,7 @@
     throw_if(52, c_type.null?()); ;; invalid type
 
     s_addr~skip_bits(3); 
-    (slice url, int f) = p_urls.udict_get?(256 + 8, s_addr.preload_uint(256 + 8));
+    (slice url, int f) = p_urls.udict_get?(256, slice_hash(s_addr));
     throw_unless(60, f);
     var (prx, s_provider, left, f) = c_type.pfxdict_get?(1023, url);
     throw_unless(53, f & left.slice_empty?()); ;; provider not exists
@@ -81,9 +81,10 @@
         s_provider~load_grams(),
         s_provider~load_uint(32));
 
-    var (o_addr, s_orcl, f) = idict_get_min?(o_addrs, 8 + 256);
-    if (f) {
-        var (s_orcl, f) = idict_get?(orcls, 8 + 256, o_addr);
+
+    (int o_addr, slice s_orcl, int f) = udict_get_min?(o_addrs, 256);
+    while (f) {
+        (s_orcl, f) = udict_get?(orcls, 256, o_addr);
         throw_unless(55, f);
         var (last_call, reput, call_inrv, profit, stake) = get_oracle(s_orcl);
         
@@ -101,8 +102,8 @@
             .store_grams(profit)
             .store_uint(stake, 32)
             .end_cell().begin_parse();
-        orcls~idict_set(8 + 256, o_addr, s_orcl);
-        (o_addr, s_orcl, f) = idict_get_next?(o_addrs, 8 + 256, o_addr);
+        orcls~udict_set(256, o_addr, s_orcl);
+        (o_addr, s_orcl, f) = udict_get_next?(o_addrs, 256, o_addr);
     }
 
     s_provider = begin_cell()
@@ -110,7 +111,7 @@
         .store_uint(p_addr, 256) 
         .store_uint(price_per_call, 32) 
         .store_grams(gram_pool)
-        .store_uint(valid_until, 32) ;; expired in 3 monthes
+        .store_uint(valid_until, 32)
         .end_cell().begin_parse();
 
     var (c_type, f) = c_type.pfxdict_set?(1023, url, s_provider);
