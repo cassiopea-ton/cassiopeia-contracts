@@ -8,5 +8,5 @@ SEQNO=`./lite-client/lite-client -C ./lite-client/config.json -c 'runmethod '$US
 STAKE=`./lite-client/lite-client -C ./lite-client/config.json -c 'runmethod '$CONTRACT' getstake' |  grep 'remote result' | cut -d "[" -f2 | cut -d "]" -f1`
 
 fift -s fift_scripts/$SCRIPT_NAME.fif
-./lite-client/lite-client -C ./lite-client/ton-global.config -l null -c 'last'
+./lite-client/lite-client -C ./lite-client/ton-global.config -l /dev/null -c 'last'
 fift -s fift_scripts/wallet.fif $WALLET_NAME $CONTRACT $SEQNO $STAKE "./build/wallet-query" -B "./build/$SCRIPT_NAME.boc" 2>&1

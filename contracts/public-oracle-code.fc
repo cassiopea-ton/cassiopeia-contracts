@@ -74,7 +74,7 @@
     cell history) = load_data();
 
     ;; check if sender has permission, only register can request data 
-    throw_unless(50, register_addr == s_addr.preload_uint(8 + 256)); ;; 100::wc::addr
+    throw_unless(50, register_addr == slice_hash(s_addr));
     var (real_time, epoch_data, f) = udict_get_next?(history, 32, time);
     ifnot (time) {
         (real_time, epoch_data, f) = udict_get_max?(history, 32);
@@ -87,19 +87,25 @@
     var (data, participated, orcls) = (epoch_data~load_int(32), 
         epoch_data~load_uint(32),
         epoch_data.preload_dict());
-
+    
+    ;; pay
     var msg = begin_cell()
         .store_uint(0xc4ff, 17)
         .store_slice(s_addr)
         .store_grams(0)
         .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
-        .store_uint(0xcceeee, 32)
+        .store_uint(0xffeeee, 32)
         .store_uint(0, 64)
+        .store_uint(0, 8)
         .store_uint(participated, 32)
         .store_ref(orcls)
         .end_cell();
     send_raw_message(msg, 3);
+    
+    ;; punish
+    ;; skipped ...
 
+    ;; return answer
     var msg = begin_cell()
         .store_uint(0xc4ff, 17)
         .store_slice(receiver)
