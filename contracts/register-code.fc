@@ -61,7 +61,7 @@
         .end_cell();
     send_raw_message(msg, 3);
 
-    return store_data(orcls, providers, p_urls, free_pool); 
+    return store_data(providers, orcls, p_urls, free_pool); 
 }
 
 () punish(slice s_addr, int t, cell o_addrs) impure {
@@ -115,7 +115,7 @@
 
     var (c_type, f) = c_type.pfxdict_set?(1023, url, s_provider);
     providers = providers.udict_set_ref(8, t, c_type);
-    return store_data(orcls, providers, p_urls, free_pool); 
+    return store_data(providers, orcls, p_urls, free_pool); 
 }
 
 () pay(slice s_addr, int t, int participated, cell o_addrs) impure {
@@ -172,7 +172,7 @@
 
     var (c_type, f) = c_type.pfxdict_set?(1023, url, s_provider);
     providers = providers.udict_set_ref(8, t, c_type);
-    return store_data(orcls, providers, p_urls, free_pool); 
+    return store_data(providers, orcls, p_urls, free_pool); 
 }
 
 () request_data(int msg_value, int t, slice url, int s_receiver, int time) impure {
@@ -204,7 +204,7 @@
 
     var (c_type, f) = c_type.pfxdict_set?(1023, url, s_provider);
     providers = providers.udict_set_ref(8, t, c_type);
-    store_data(orcls, providers, p_urls, free_pool);
+    store_data(providers, orcls, p_urls, free_pool);
     ;; send data
     var msg = begin_cell()
         .store_uint(0xc4ff, 17)
@@ -265,7 +265,7 @@
         .end_cell();
     send_raw_message(msg, 3);
 
-    return store_data(orcls, providers, p_urls, free_pool);
+    return store_data(providers, orcls, p_urls, free_pool);
 }
 
 () register_provider(int msg_value, int t, slice url, int wc, int p_addr, int price_per_call) impure {
@@ -294,7 +294,7 @@
     var (c_type, f) = c_type.pfxdict_set?(1023, url, s_provider);
     providers~udict_set_ref(8, t, c_type);
     p_urls~udict_set(8 + 256, s_addr.preload_uint(8 + 256), url);
-    return store_data(orcls, providers, p_urls, free_pool);
+    return store_data(providers, orcls, p_urls, free_pool);
 }
 
 () register_oracle(int msg_value, slice s_addr) impure {
@@ -310,7 +310,7 @@
         .end_cell().begin_parse();
     (orcls, int f) = orcls.udict_add?(256, slice_hash(s_addr), s_orcl);
     throw_unless(54, f);
-    return store_data(orcls, providers, p_urls, free_pool);
+    return store_data(providers, orcls, p_urls, free_pool);
 }
 
 () recv_external(slice in_msg) impure {
