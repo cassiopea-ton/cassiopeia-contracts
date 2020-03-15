@@ -12,3 +12,4 @@ fift -s fift_scripts/send-int-data.fif "some.com" "50" "0"
 fift -s tests/03_send_int_data_tests.fif
 
 fift -s fift_scripts/request-data.fif "some.com" "./build/new-wallet" 
+fift -s tests/04_request_data_tests.fif

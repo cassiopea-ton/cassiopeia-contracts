@@ -32,10 +32,10 @@ dup
 updated_storage !
 boc>B initial_storage boc>B B= 0= test_state
 
-"build/send-int-data.boc" file>B B>boc int_msg_body ! 
+"build/request-data.boc" file>B B>boc int_msg_body ! 
 
-// test # 0 try to send data
-0 amount !
+// test # 0 try to request data
+50 amount !
 prepare-internal-msg
 
 amount @ int_message @ int_msg_body @ <s recv_internal register-code updated_storage @ c7 runvmctx
@@ -44,10 +44,10 @@ dup
 updated_storage !
 boc>B initial_storage boc>B B= 0= test_state
 
-// test # 1 try to send by unregitred oracle
-2 idx !
+// test # 1 try to send with insufficient amount
+5 amount !
 prepare-internal-msg
 
 amount @ int_message @ int_msg_body @ <s recv_internal register-code updated_storage @ c7 runvmctx
-swap 55 test_code_fail
+swap 58 test_code_fail
 boc>B updated_storage @ boc>B B= test_state

@@ -175,7 +175,7 @@
     return store_data(providers, orcls, p_urls, free_pool); 
 }
 
-() request_data(int msg_value, int t, slice url, int s_receiver, int time) impure {
+() request_data(int msg_value, int t, slice url, cell s_receiver, int time) impure {
     var (providers, orcls, p_urls, free_pool) = load_data();
     ;; get info about provider
     cell c_type = providers.udict_get_ref(8, t);
@@ -191,7 +191,7 @@
         s_provider~load_grams(),
         s_provider~load_uint(32));
 
-    throw_unless(58, msg_value != price_per_call); ;; not enough Grams for request
+    throw_unless(58, msg_value == price_per_call); ;; not enough Grams for request
     gram_pool += msg_value;
 
     s_provider = begin_cell()
@@ -215,7 +215,7 @@
         .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
         .store_uint(0xbbeeee, 32)
         .store_uint(0, 64)
-        .store_uint(s_receiver, 8 + 256)
+        .store_ref(s_receiver)
         .store_int(time, 64)
         .end_cell();
     return send_raw_message(msg, 3);     
@@ -349,10 +349,7 @@
     return register_provider(msg_value, t, url.begin_parse(), wc, p_addr, price_per_call);
   }
   if (op == 0xcceeee) {
-    int t = in_msg~load_uint(8);
-    (in_msg, cell url) = in_msg.load_ref();
-    int c_receiver = in_msg~load_uint(8 + 258);
-    int time = in_msg.preload_int(64);
+    (int t, cell url, cell c_receiver, int time) = (in_msg~load_uint(8), in_msg~load_ref(), in_msg~load_ref(), in_msg.preload_int(64));
     return request_data(msg_value, t, url.begin_parse(), c_receiver, time);
   }
   if (op == 0xddeeee) {
