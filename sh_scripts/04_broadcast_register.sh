@@ -1,5 +1,5 @@
 #!/bin/sh
-WALLET_NAME="build/new-wallet-00"
+WALLET_NAME="build/new-wallet"
 CONTRACT=`fift -s fift_scripts/show-init-addr.fif build/new-register `
 USER=`fift -s fift_scripts/show-bouceable-addr.fif $WALLET_NAME`
 ./lite-client/lite-client -C ./lite-client/config.json -c 'last'
