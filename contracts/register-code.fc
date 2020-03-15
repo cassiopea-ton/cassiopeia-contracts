@@ -294,7 +294,7 @@
 
     var (c_type, f) = c_type.pfxdict_set?(1023, url, s_provider);
     providers~udict_set_ref(8, t, c_type);
-    p_urls~udict_set(8 + 256, s_addr.preload_uint(8 + 256), url); ;; TODO: replace with slice hash!
+    p_urls~udict_set(256, slice_hash(s_addr), url);
     return store_data(providers, orcls, p_urls, free_pool);
 }
 
