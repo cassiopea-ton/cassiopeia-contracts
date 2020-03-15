@@ -7,3 +7,6 @@ fift -s tests/01_register_oracle_tests.fif
 
 fift -s fift_scripts/register-provider.fif "some.com" "50" "0" "./build/new-public-oracle"
 fift -s tests/02_register_provider_tests.fif
+
+fift -s fift_scripts/send-int-data.fif "some.com" "50" "0" 
+fift -s tests/03_send_int_data_tests.fif
