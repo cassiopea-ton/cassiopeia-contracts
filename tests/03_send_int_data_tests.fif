@@ -1,36 +1,5 @@
 #!/usr/bin/env fift -s
-"TonUtil.fif" include
-"Asm.fif" include
-
-"tests/register-utils.fif" include
-
-
-// prerequirements 
-"build/register-oracle.boc" file>B B>boc int_msg_body ! 
-
-// register oracle
-
-5000 amount !
-1 idx !
-prepare-internal-msg
-
-amount @ int_message @ int_msg_body @ <s recv_internal register-code initial_storage c7 runvmctx
-test_code
-dup 
-updated_storage !
-boc>B initial_storage boc>B B= 0= test_state
-
-// register provider
-
-"build/register-provider.boc" file>B B>boc int_msg_body ! 
-500000 amount !
-prepare-internal-msg
-
-amount @ int_message @ int_msg_body @ <s recv_internal register-code updated_storage @ c7 runvmctx
-test_code
-dup 
-updated_storage !
-boc>B initial_storage boc>B B= 0= test_state
+"tests/prerequirements.fif" include
 
 "build/send-int-data.boc" file>B B>boc int_msg_body ! 
 

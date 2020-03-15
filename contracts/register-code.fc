@@ -125,7 +125,7 @@
     throw_if(52, c_type.null?()); ;; invalid type
 
     s_addr~skip_bits(3); 
-    (slice url, int f) = p_urls.udict_get?(256 + 8, s_addr.preload_uint(256 + 8));
+    (slice url, int f) = p_urls.udict_get?(256, slice_hash(s_addr));
     throw_unless(60, f);
     var (prx, s_provider, left, f) = c_type.pfxdict_get?(1023, url);
     throw_unless(53, f & left.slice_empty?()); ;; provider not exists
@@ -139,14 +139,14 @@
 
     int orcl_payment = price_per_call / participated;
 
-    var (o_addr, s_orcl, f) = idict_get_min?(o_addrs, 8 + 256);
+    var (o_addr, s_orcl, f) = udict_get_min?(o_addrs, 256);
     while (f & participated) {
         gram_pool -= orcl_payment;
         throw_unless(61, gram_pool >= 0);
         throw_unless(62, participated > 0);
         participated -= 1;
 
-        var (s_orcl, f) = idict_get?(orcls, 8 + 256, o_addr);
+        var (s_orcl, f) = udict_get?(orcls, 256, o_addr);
         throw_unless(55, f);
         var (last_call, reput, call_inrv, profit, stake) = get_oracle(s_orcl);
 
@@ -158,8 +158,8 @@
             .store_grams(profit + orcl_payment)
             .store_uint(stake, 32)
             .end_cell().begin_parse();
-        orcls~idict_set(8 + 256, o_addr, s_orcl);
-        (o_addr, s_orcl, f) = idict_get_next?(o_addrs, 8 + 256, o_addr);
+        orcls~udict_set(256, o_addr, s_orcl);
+        (o_addr, s_orcl, f) = udict_get_next?(o_addrs, 256, o_addr);
     }
 
     s_provider = begin_cell()

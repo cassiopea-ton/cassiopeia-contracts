@@ -7,6 +7,8 @@ variable amount
 variable idx
 variable int_msg_body
 variable int_message
+"./build/new-public-oracle" constant provider-file-base
+provider-file-base +".addr" load-address 2constant p_addr
 
 { { ."success " cr } { "test failed" abort } cond } : test_ret_value
 { swap 0= test_ret_value } : test_code
@@ -46,3 +48,6 @@ constant c7
 
 { <b b{00} s, bounce 1 i, b{0100} s, -1 <b idx @ 32 u, b> hashu addr, b{100} s, dest_addr addr, amount @ Gram, 0 9 64 32 + + 1+ u, 
 int_msg_body @ <s 2dup s-fits? not rot over 1 i, -rot { drop int_msg_body @ ref, } { s, } cond b>  int_message ! } : prepare-internal-msg
+
+{ <b b{00} s, bounce 1 i, b{0100} s, p_addr addr, b{100} s, dest_addr addr, amount @ Gram, 0 9 64 32 + + 1+ u, 
+int_msg_body @ <s 2dup s-fits? not rot over 1 i, -rot { drop int_msg_body @ ref, } { s, } cond b>  int_message ! } : prepare-internal-provider-msg

@@ -1,0 +1,62 @@
+#!/usr/bin/env fift -s
+"tests/prerequirements.fif" include
+
+"build/request-data.boc" file>B B>boc int_msg_body ! 
+
+50 amount !
+prepare-internal-msg
+
+amount @ int_message @ int_msg_body @ <s recv_internal register-code updated_storage @ c7 runvmctx
+test_code
+dup 
+updated_storage !
+boc>B initial_storage boc>B B= 0= test_state
+
+// test # 0 try to pay from provider
+variable o_addrs
+dictnew o_addrs !
+{ <b  b> <s } : create-orcl
+{ o_addrs @ 256 udict!+ not abort"cannot add orcl to dictionary" o_addrs ! } : add-orcl
+
+
+<b  b> <s
+<b 4 3 u, -1 8 i, <b idx @ 32 u, b> hashu 256 u, b> hashu add-orcl
+<b 0xffeeee 32 u, 0 64 u, 0 8 u, 1 32 u, o_addrs @ dict, b> int_msg_body ! 
+
+0 amount !
+prepare-internal-provider-msg
+
+amount @ int_message @ int_msg_body @ <s recv_internal register-code updated_storage @ c7 runvmctx
+test_code
+dup 
+updated_storage !
+boc>B initial_storage boc>B B= 0= test_state
+
+// test # 1 try to send oracl that wasn't registred
+
+2 idx !
+<b  b> <s
+<b 4 3 u, -1 8 i, <b idx @ 32 u, b> hashu 256 u, b> hashu add-orcl
+<b 0xffeeee 32 u, 0 64 u, 0 8 u, 2 32 u, o_addrs @ dict, b> int_msg_body ! 
+
+prepare-internal-provider-msg
+
+amount @ int_message @ int_msg_body @ <s recv_internal register-code updated_storage @ c7 runvmctx
+swap 61 test_code_fail
+boc>B updated_storage @ boc>B B= test_state
+
+// test # 2 try to send reward to two registred oracls
+
+"build/register-oracle.boc" file>B B>boc int_msg_body !
+5000 amount !
+prepare-internal-msg
+
+amount @ int_message @ int_msg_body @ <s recv_internal register-code initial_storage c7 runvmctx
+test_code
+dup 
+updated_storage !
+boc>B initial_storage boc>B B= 0= test_state
+
+<b 0xffeeee 32 u, 0 64 u, 0 8 u, 2 32 u, o_addrs @ dict, b> int_msg_body ! 
+
+prepare-internal-provider-msg
