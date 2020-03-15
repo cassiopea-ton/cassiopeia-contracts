@@ -1,7 +1,7 @@
 
 (int, int, int, cell, int, int, cell, cell) load_data() method_id {
     var ds = get_data().begin_parse();
-    return (ds~load_uint(8 + 256),
+    return (ds~load_uint(256),
         ds~load_uint(32),
         ds~load_uint(32),
         ds~load_dict(),
@@ -20,7 +20,7 @@
         cell curent_round,
         cell history) impure {
     set_data(begin_cell()
-        .store_uint(register_addr, 8 + 256)
+        .store_uint(register_addr, 256)
         
         .store_uint(min_counter, 32)
         .store_uint(participated, 32)
@@ -38,7 +38,7 @@
 
 ;; request_data(send_data)
 
-() send_data(slice s_addr, int orcl, int data) impure {
+() send_data(slice s_addr, slice orcl, int data) impure {
     (int register_addr, 
     int min_counter,
     int participated, 
@@ -49,10 +49,9 @@
     cell history) = load_data();
 
     ;; check if sender has permission, only register can send data
-    s_addr~skip_bits(3);
-    throw_unless(50, register_addr == s_addr~load_uint(8 + 256)); ;; 100::wc::addr
+    throw_unless(50, register_addr == slice_hash(s_addr));
     
-    orcls~idict_set(8 + 256, orcl, begin_cell().store_int(data, 32).end_cell().begin_parse());
+    orcls~udict_set(256, slice_hash(orcl), begin_cell().store_int(data, 32).end_cell().begin_parse());
     participated += 1;
     (slice s_counter, int f) = curent_round.idict_get?(32, data);
     int counter = 0;
@@ -153,8 +152,8 @@
   }
   int query_id = in_msg~load_uint(64);
   if (op == 0xaaeeee) {
-    (int orcl, cell c_data) = (in_msg~load_uint(8 + 256), in_msg.preload_ref());
-    return send_data(s_addr.skip_bits(8), orcl, c_data.preload_int(32));
+    (cell orcl, cell c_data) = (in_msg~load_ref(), in_msg.preload_ref());
+    return send_data(s_addr, orcl.begin_parse(), c_data.begin_parse().preload_int(32));
   }
   if (op == 0xbbeeee) {
     int time = in_msg~load_int(64);

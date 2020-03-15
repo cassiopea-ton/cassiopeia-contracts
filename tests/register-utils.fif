@@ -10,6 +10,9 @@ variable int_message
 "./build/new-public-oracle" constant provider-file-base
 provider-file-base +".addr" load-address 2constant p_addr
 
+"./build/new-register" constant register-file-base
+register-file-base +".addr" load-address 2constant r_addr
+
 { { ."success " cr } { "test failed" abort } cond } : test_ret_value
 { swap 0= test_ret_value } : test_code
 { = test_ret_value } : test_code_fail
@@ -51,3 +54,6 @@ int_msg_body @ <s 2dup s-fits? not rot over 1 i, -rot { drop int_msg_body @ ref,
 
 { <b b{00} s, bounce 1 i, b{0100} s, p_addr addr, b{100} s, dest_addr addr, amount @ Gram, 0 9 64 32 + + 1+ u, 
 int_msg_body @ <s 2dup s-fits? not rot over 1 i, -rot { drop int_msg_body @ ref, } { s, } cond b>  int_message ! } : prepare-internal-provider-msg
+
+{ <b b{00} s, bounce 1 i, b{0100} s, r_addr addr, b{100} s, dest_addr addr, amount @ Gram, 0 9 64 32 + + 1+ u, 
+int_msg_body @ <s 2dup s-fits? not rot over 1 i, -rot { drop int_msg_body @ ref, } { s, } cond b>  int_message ! } : prepare-internal-register-msg

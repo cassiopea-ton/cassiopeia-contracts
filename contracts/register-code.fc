@@ -260,7 +260,7 @@
         .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
         .store_uint(0xaaeeee, 32)
         .store_uint(0, 64)
-        .store_slice(s_addr)
+        .store_ref(begin_cell().store_slice(s_addr).end_cell())
         .store_ref(data)
         .end_cell();
     send_raw_message(msg, 3);
