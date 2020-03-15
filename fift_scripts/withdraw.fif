@@ -1,0 +1,12 @@
+#!/usr/bin/fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+
+"build/withdraw"  constant savefile
+$1 $>GR =: amount
+
+<b 0xeeaaee 32 u, 0 64 u, amount Gram, b> 
+
+2 boc+>B 
+savefile +".boc" tuck B>file
+."(Saved to file " type .")" cr
