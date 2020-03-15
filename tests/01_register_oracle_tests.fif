@@ -10,6 +10,7 @@ variable int_message
 
 { { ."success " cr } { "test failed" abort } cond } : test_ret_value
 { swap 0= test_ret_value } : test_code
+{ = test_ret_value } : test_code_fail
 { { ."success " cr } { " contract state error: " abort } cond } : test_state
 100000 constant timeout
 true constant bounce
@@ -49,4 +50,18 @@ int_msg_body @ <s 2dup s-fits? not rot over 1 i, -rot { drop int_msg_body @ ref,
 
 amount @ int_message @ int_msg_body @ <s recv_internal code initial_storage c7 runvmctx
 test_code
+dup 
+updated_storage !
 boc>B initial_storage boc>B B= 0= test_state
+
+// test # 1 try to register oracle in second time
+
+amount @ int_message @ int_msg_body @ <s recv_internal code updated_storage @ c7 runvmctx
+swap 54 test_code_fail
+boc>B updated_storage @ boc>B B= test_state
+
+// test # 2 try to register oracle with insufficient amount
+300 amount !
+amount @ int_message @ int_msg_body @ <s recv_internal code initial_storage c7 runvmctx
+swap 50 test_code_fail
+boc>B initial_storage boc>B B= test_state
