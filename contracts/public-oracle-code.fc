@@ -76,7 +76,7 @@
     ;; check if sender has permission, only register can request data 
     throw_unless(50, register_addr == slice_hash(s_addr));
     var (real_time, epoch_data, f) = udict_get_next?(history, 32, time);
-    ifnot (time) {
+    if (time == -1) {
         (real_time, epoch_data, f) = udict_get_max?(history, 32);
     }
     ifnot (f) {
@@ -179,7 +179,7 @@
     cell history) = load_data();
 
     if (last_updated_time + frequency < now()) {
-        var (data, s_counter, f) = idict_get_min?(curent_round, 32);
+        (int data, slice s_counter, int f) = idict_get_min?(curent_round, 32);
         if (f) {
             int counter = s_counter.preload_uint(16);
             ;; look for median
@@ -194,11 +194,14 @@
         last_updated_time = now();
     }
 
-    var (time, epoch_data, f) = udict_get_min?(history, 32);
+    (int time, slice epoch_data, int f) = udict_get_min?(history, 32);
 
     ;; data older than half of year hsould be deleted
-    while (f & time < now() - 15768000) {
-        (history, f) = udict_delete?(history, 32, time);
+        dump_stack();
+    while (f) {
+        if (time + 15768000 < now()) {
+            (history, f) = udict_delete?(history, 32, time);
+        }
         (time, epoch_data, f) = udict_get_next?(history, 32, time);
     }
 
