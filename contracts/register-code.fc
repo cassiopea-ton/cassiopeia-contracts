@@ -387,6 +387,24 @@
     return (5000);
 }
 
+
+(int, int, int, int, int) getorclbyurl(int t, slice url) method_id {
+    var (providers, orcls, p_urls, free_pool) = load_data();
+    ;; get info about provider
+    cell c_type = providers.udict_get_ref(8, t);
+    throw_if(52, c_type.null?()); ;; invalid type
+    slice url = begin_cell().store_slice(url).set_zeros(8).end_cell().begin_parse();
+    var (prx, s_provider, left, f) = c_type.pfxdict_get?(1023, url);
+    ifnot(f & left.slice_empty?()) {
+        return (0, 0, 0, 0, 0);
+    }
+    return (s_provider~load_int(8), 
+        s_provider~load_uint(256),
+        s_provider~load_uint(32), 
+        s_provider~load_grams(),
+        s_provider~load_uint(32));
+}
+
 ;; TODO:
 ;; - upgrade protocol
 ;; - remove_inactive
