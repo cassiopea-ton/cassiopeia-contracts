@@ -38,7 +38,6 @@
     var (s_orcl, f) = udict_get?(orcls, 256, slice_hash(s_addr));
     throw_unless(55, f);
     var (last_call, reput, call_inrv, profit, stake) = get_oracle(s_orcl);
-    dump_stack();
     throw_if(67, profit < amount);
     profit -= amount;
 

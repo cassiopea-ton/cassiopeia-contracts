@@ -13,8 +13,8 @@ public-oracle-source include
     0 32 u,
     0 32 u,
     dictnew dict,
-    0 32 u,
-    0 32 u,
+    1 32 u,
+    now 32 u,
     dictnew dict,
     dictnew dict,
 b> // data

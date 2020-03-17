@@ -1,0 +1,55 @@
+#!/usr/bin/env fift -s
+"tests/prerequirements.fif" include
+
+<b 
+    <b b{100} s, r_addr addr, b> hashu 256 u,
+    1 32 u,
+    0 32 u,
+    dictnew dict,
+    0 32 u,
+    now 32 u,
+    dictnew dict,
+    dictnew dict,
+b> 
+updated_storage !
+
+<b 0xaaeeee 32 u, 0 64 u, 0 8 u, <b  <b idx @ 32 u, b> hashu 256 u, b> ref, <b 21 32 i, b> ref, b> int_msg_body ! 
+
+0 amount !
+prepare-internal-register-msg
+
+amount @ int_message @ int_msg_body @ <s recv_internal public-oracle-code updated_storage @ c7 runvmctx
+test_code
+dup 
+updated_storage !
+boc>B initial_storage boc>B B= 0= test_state
+
+0 tuple 0x076ef1ea ,
+0 , 0 , 
+now 1570 + ,
+1 , 1 , 0 , 
+0 tuple 9223372036854775807 , dictnew , , 
+dest_addr nip , dictnew , 
+1 tuple 
+constant c7
+
+run_ticktock public-oracle-code updated_storage @ c7 runvmctx
+test_code
+dup 
+updated_storage !
+boc>B initial_storage boc>B B= 0= test_state
+
+
+// test # 0 request data
+
+<b 0xbbeeee 32 u, 0 64 u, <b  <b idx @ 32 u, b> hashu 256 u, b> ref, -1 64 i, b> int_msg_body ! 
+
+0 amount !
+prepare-internal-register-msg
+
+amount @ int_message @ int_msg_body @ <s recv_internal public-oracle-code updated_storage @ c7 runvmctx
+test_code
+dup 
+updated_storage !
+boc>B initial_storage boc>B B= 0= test_state
+
