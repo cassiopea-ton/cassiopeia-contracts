@@ -6,8 +6,8 @@ USER=`fift -s fift_scripts/show-bouceable-addr.fif $WALLET_NAME`
 SEQNO=`./lite-client/lite-client -C ./lite-client/config.json -c 'runmethod '$USER' seqno' |  grep 'remote result' | cut -d "[" -f2 | cut -d "]" -f1`
 
 fift -s fift_scripts/wallet.fif $WALLET_NAME $CONTRACT $SEQNO 0.5 "./build/wallet-query"
-./lite-client/lite-client -C ./lite-client/config.json -c 'last'
-./lite-client/lite-client -C ./lite-client/config.json -c 'sendfile ./build/wallet-query.boc'
+./lite-client/lite-client -v0 -C ./lite-client/config.json -c 'last'
+./lite-client/lite-client -v0 -C ./lite-client/config.json -c 'sendfile ./build/wallet-query.boc'
 sleep 5
-./lite-client/lite-client -C ./lite-client/config.json -c 'last'
-./lite-client/lite-client -C ./lite-client/config.json -c 'sendfile ./build/new-public-oracle-query.boc'
+./lite-client/lite-client  -v0 -C ./lite-client/config.json -c 'last'
+./lite-client/lite-client -v0 -C ./lite-client/config.json -c 'sendfile ./build/new-public-oracle-query.boc'

@@ -2,12 +2,12 @@
 "TonUtil.fif" include
 "Asm.fif" include
 
-"build/register-provider"  constant savefile
-4 :$1..n
+5 :$1..n
 $1  =: url-str
 $2 "50" replace-if-null parse-int =: price_per_call
 $3 "0" replace-if-null parse-int =: t
 $4 "./build/new-provider" replace-if-null  =: provider-source
+$5 "build/register-provider" replace-if-null  =: savefile
 
 provider-source +".addr" load-address 2constant p_addr
 

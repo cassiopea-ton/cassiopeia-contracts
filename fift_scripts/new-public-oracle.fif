@@ -2,14 +2,14 @@
 "TonUtil.fif" include
 "Asm.fif" include
 
-
 -1 constant wc
 "build/public-oracle-code.fif" constant public-oracle-source 
-"build/new-public-oracle"  constant file-base 
+1 :$1..n
+$1 "build/new-public-oracle" replace-if-null  =: file-base
 
 public-oracle-source include
 <b 
-    0 267 u,
+    0 257 u,
     0 32 u,
     0 32 u,
     dictnew dict,

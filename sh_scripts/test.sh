@@ -8,6 +8,9 @@ fift -s fift_scripts/register-oracle.fif
 fift -s tests/01_register_oracle_tests.fif
 
 fift -s fift_scripts/register-provider.fif "some.com" "50" "0" "./build/new-public-oracle"
+func -P -o build/public-oracle-code.fif contracts/stdlib.fc contracts/public-oracle-code.fc
+fift -s fift_scripts/new-public-oracle.fif "./build/new-public-oracle1"
+fift -s fift_scripts/register-provider.fif "pua" "570" "0" "./build/new-public-oracle1" "./build/register-provider1"
 fift -s tests/02_register_provider_tests.fif
 
 fift -s fift_scripts/send-int-data.fif "some.com" "50" "0" 

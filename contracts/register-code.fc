@@ -228,6 +228,7 @@
     var (last_call, reput, call_inrv, profit, stake) = get_oracle(s_orcl);
     throw_if(56, last_call + call_inrv < now());
     throw_if(57, reput < 0);
+    throw_if(58, stake < 5000);
 
     ;; update oracle
     slice s_orcl = begin_cell()
@@ -269,7 +270,7 @@
 
 () register_provider(int msg_value, int t, slice url, int wc, int p_addr, int price_per_call) impure {
     var (providers, orcls, p_urls, free_pool) = load_data();
-    throw_unless(51, msg_value == 500000); ;; not enough Grams to register
+    throw_unless(51, msg_value > 500000); ;; not enough Grams to register
     cell c_type = providers.udict_get_ref(8, t);
     
     ;; pad with zeros 
@@ -277,7 +278,10 @@
 
     ifnot (c_type.null?()) {
         var (prx, val, left, f) = c_type.pfxdict_get?(1023, url);
-        throw_if(53, f & left.slice_empty?()); ;; provider exists
+        dump_stack();
+        if (f) {
+            throw_if(53, left.slice_empty?()); ;; provider exists
+        }
     }
     slice s_addr =  begin_cell()
         .store_int(wc, 8)
@@ -299,11 +303,11 @@
 
 () register_oracle(int msg_value, slice s_addr) impure {
     var (providers, orcls, p_urls, free_pool) = load_data();
-    throw_unless(50, msg_value == 5000); ;; not enough Grams to stake
+    throw_unless(50, msg_value > 5000); ;; not enough Grams to stake
     slice s_orcl = begin_cell()
         .store_uint(now(), 32)
         .store_int(100, 32) ;; initial reputation
-        .store_uint(36000, 32) ;; initial calls_interval, 1 call per 10min
+        .store_uint(30000, 32) ;; initial calls_interval, 1 call per 10min
         .store_grams(0)
         .store_uint(msg_value, 32)
         .store_slice(s_addr)
@@ -414,3 +418,4 @@
 ;; - allow remove provider by voting
 ;; - reputation limits
 ;; - withdraw free coins 
+;; - unregister
